@@ -181,6 +181,24 @@ class Utils {
         }
     }
 
+    /** Return a boolean checking whether a file is inside a given directory
+     *
+     * @param fileName
+     * @param dir
+     * @return
+     */
+    static boolean isInside(String fileName, File dir){
+        List list = plainFilenamesIn(dir);
+        for (int i = 0; i < list.size(); i++) {
+            if(list.get(i) == fileName){
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+
     /** Returns a list of the names of all plain files in the directory DIR, in
      *  lexicographic order as Java Strings.  Returns null if DIR does
      *  not denote a directory. */

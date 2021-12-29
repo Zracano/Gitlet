@@ -1,7 +1,12 @@
 package gitlet;
 
+import javax.swing.text.DateFormatter;
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Arrays;
 
 import static gitlet.Utils.*;
 
@@ -14,26 +19,24 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) throws IOException {
-        // TODO: what if args is empty?
+        Repository repository = new Repository();
         String firstArg = args[0];
+
         switch(firstArg) {
             case "init":
-                // TODO: handle the `init` command
-
+                repository.init();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
-
+                repository.add(args[1]);
                 break;
             case "commit":
-                Commit commit = new Commit();
-
+                repository.commit(Arrays.stream(args).toList().remove(0).toString());
                 break;
             case "rm":
 
                 break;
             case "log":
-
+                repository.log();
                 break;
             case "global-log":
 
@@ -48,10 +51,10 @@ public class Main {
 
                 break;
             case "branch":
-
+                repository.branch(args[1]);
                 break;
             case "rm-branch":
-
+                repository.rmBranch(args[1]);
                 break;
             case "reset":
 
@@ -59,10 +62,16 @@ public class Main {
             case "merge":
 
                 break;
-            default:
-                System.exit(0);
+            case "test":
+
                 break;
-            // TODO: FILL THE REST IN
+            default:
+                if(firstArg !=null)
+                    System.out.println("Not a command");
+                else
+                    System.out.println("Enter a command");
+                break;
         }
+        System.exit(0);
     }
 }

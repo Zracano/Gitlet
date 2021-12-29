@@ -1,28 +1,70 @@
 package gitlet;
 
-// TODO: any imports you need here
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.util.Date; // TODO: You'll likely use this in this class
+import static gitlet.Utils.*;
 
-/** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
- *
- *  @author TODO
- */
-public class Commit {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
-
-    /** The message of this Commit. */
+public class Commit implements Serializable{
     private String message;
+    private String parent;
+    private String time;
+    private Repository r;
+    private ArrayList<String> trackedBlobs;
+    public Commit(){
+        time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
+        message = "Initial Commit";
+        parent = null;
+        trackedBlobs = null;
+    }
 
-    /* TODO: fill in the rest of this class. */
+    public Commit(String message, Repository r) throws IOException {
+        this.r = r;
+        time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
+        this.message = message;
+        parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head.txt"))));
+        // adds all tracked blobs from parent commit to current commits tracked blobs
+        trackedBlobs = new ArrayList<>(readObject(join(r.Commits, parent), Commit.class).trackedBlobs);
+        // Determines if we need to add and remove with this commit
+        if(!(plainFilenamesIn(r.StagedAddition).size() == 0)){
+            List<String> list = plainFilenamesIn(r.StagedAddition);
+            Blob blob;
+            File path;
+            for(String fileName: list){
+                blob = new Blob(fileName, readContentsAsString(new File(fileName)));
+                path = join(r.Blobs, sha1(blob));
+                path.createNewFile();
+                if(!trackedBlobs.contains(fileName))
+                    trackedBlobs.add(fileName);
+            }
+        }
+        if(!(plainFilenamesIn(r.StagedRemoval).size() == 0)){
+            List<String> list = plainFilenamesIn(r.StagedRemoval);
+            for(String fileName: list){
+                if(trackedBlobs.contains(fileName))
+                    trackedBlobs.remove(fileName);
+            }
+        }
+    }
+
+    public String hash(){
+        return Utils.sha1(Utils.serialize(this));
+    }
+
+    public String getMessage() {
+        return message;
+    }
+    public String getTime() {
+        return time;
+    }
+    public String getParent() {
+        return parent;
+    }
 }
 // make a hashset that uses the commit sha-1 as key and value
 // The commits should point to their parent sha-1

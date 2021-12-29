@@ -25,8 +25,10 @@ public class Education {
                 File dog = join(saves, "dog.py");
                 File cat = join(GITLET_DIR, "saves");
                 File clap = join(saves, "clap");
+
                 GITLET_DIR.mkdir();
                 saves.mkdir();
+
                 clap.createNewFile();
                 loL jump = new loL();
                 writeObject(clap, jump);
