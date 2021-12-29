@@ -15,7 +15,7 @@ public class Commit implements Serializable{
     private String parent;
     private String time;
     private Repository r;
-    private ArrayList<String> trackedBlobs;
+    public ArrayList<String> trackedBlobs;
     public Commit(){
         time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         message = "Initial Commit";

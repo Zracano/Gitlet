@@ -21,25 +21,27 @@ public class Main {
     public static void main(String[] args) throws IOException {
         Repository repository = new Repository();
         String firstArg = args[0];
-
         switch(firstArg) {
             case "init":
                 repository.init();
                 break;
             case "add":
+                //Todo check for identical files
                 repository.add(args[1]);
                 break;
             case "commit":
                 repository.commit(Arrays.stream(args).toList().remove(0).toString());
                 break;
             case "rm":
-
+                repository.rm(args[1]);
                 break;
             case "log":
+                //Todo fix merge commits
                 repository.log();
                 break;
             case "global-log":
-
+                //Todo fix merge commits
+                repository.globalLog();
                 break;
             case "find":
 
@@ -60,9 +62,6 @@ public class Main {
 
                 break;
             case "merge":
-
-                break;
-            case "test":
 
                 break;
             default:

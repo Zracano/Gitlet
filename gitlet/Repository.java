@@ -84,7 +84,23 @@ public class Repository {
             writeObject(new File(readContentsAsString(join(Branches,"head.txt"))),commit.hash());
         }
     }
-    public void rm(String fileName){
+    public void rm(String fileName) throws IOException {
+        if(!isInside(fileName, StagedAddition) && !latestCommit().trackedBlobs.contains(fileName)){
+            System.out.println("No reason to remove the file.");
+            return;
+        }
+        if(isInside(fileName, StagedAddition)){
+            restrictedDelete(join(StagedAddition, fileName));
+        }
+        if(latestCommit().trackedBlobs.contains(fileName)){
+            // writes the file in CWD to a file in Staged removal (stages file for removal)
+            File file = join(StagedRemoval,fileName);
+            file.createNewFile();
+            writeObject(file, join(CWD,fileName));
+            // removes file from CWD if not already done
+            if(join(CWD,fileName).exists())
+                restrictedDelete(join(CWD, fileName));
+        }
 
     }
     //Todo fix merge commits
@@ -92,7 +108,7 @@ public class Repository {
         // Gets the sha of our head
         String sha = readContentsAsString(join(Branches,"head.txt"));
         Commit current;
-        // iterates through all commits in commit directory from head to initial
+        // iterates through all commits in commit directory from head to initial by using parent Sha within each Commit
         do {
             current = readObject(join(Commits, sha), Commit.class);
             System.out.println("===\ncommit " + current.hash() + "\nDate: " + current.getTime()
@@ -100,9 +116,18 @@ public class Repository {
             sha = current.getParent();
         }while(sha != null);
     }
+    //Todo fix merge commits
     public void globalLog(){
-        List list = plainFilenamesIn(Commits);
-
+        List<String> list = plainFilenamesIn(Commits);
+        File commitSha;
+        Commit commit;
+        // iterates through all commits in commit directory using their file name(Sha) to retrieve the Commit object
+        for(String fileName: list){
+            commitSha = join(Commits, fileName);
+            commit = readObject(commitSha, Commit.class);
+            System.out.println("===\ncommit " + commit.hash() + "\nDate: " + commit.getTime()
+                    + "\n" + commit.getMessage() + "\n");
+        }
     }
     public void find(String message){
 
@@ -143,5 +168,10 @@ public class Repository {
     }
     public void merge(String branchName){
 
+    }
+    // Helper method to get the latest commit from head branch
+    public Commit latestCommit(){
+        String commitSha = readContentsAsString(join(Branches,readContentsAsString(join(Branches, "head.txt"))));
+        return readObject(join(Commits, commitSha), Commit.class);
     }
 }
