@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static gitlet.Utils.*;
@@ -50,25 +51,24 @@ public class Repository {
         File file = join(CWD, fileName);
         // Checks to see if the file exists
         if(file.exists()){
-            if(isInside(fileName, StagedAddition)) {
-                // make a blob to check blob from recent commit
-
-                // If the current working version of the file is identical
-                // to the version in the current commit,
-                // do not stage it to be added, and remove it from the
-                // staging area if it is already there
-            }
             // obtains the blob of the file
             Blob blob = new Blob(fileName,readContentsAsString(file));
-            // makes a clone of the file
-            File copy = file;
-            // writes the clone of the file to the Staged for addition directory
-            File path = join(StagedAddition, fileName);
-            path.createNewFile();
-            writeObject(path,copy);
-        }else{
+            Commit currentCommit = latestCommit();
+            // determines if
+            // Unstages file if it is identical to current tracked blob
+            if(currentCommit.trackedBlobs.contains(sha1(blob))){
+                restrictedDelete(join(StagedAddition, fileName));
+                restrictedDelete(join(StagedRemoval, fileName));
+            }else {
+                // makes a clone of the file
+                File copy = file;
+                // writes the clone of the file to the Staged for addition directory
+                File path = join(StagedAddition, fileName);
+                path.createNewFile();
+                writeObject(path, copy);
+            }
+        }else
             System.out.println("File does not exist.");
-        }
     }
     public void commit(String message) throws IOException {
         // Checks for things to be Staged and a non-blank message
@@ -80,8 +80,14 @@ public class Repository {
             // Creates the commit
             Commit commit = new Commit(message, this);
             // Makes the Current Commit be our most recent commit SHA-1
-            // Does this overwrite what is in the Branch file or simple add to it?
             writeObject(new File(readContentsAsString(join(Branches,"head.txt"))),commit.hash());
+            // Clears the Staging Area
+            for(String file: plainFilenamesIn(StagedAddition)){
+                restrictedDelete(join(StagedAddition, file));
+            }
+            for(String file: plainFilenamesIn(StagedRemoval)){
+                restrictedDelete(join(StagedRemoval, file));
+            }
         }
     }
     public void rm(String fileName) throws IOException {
@@ -130,10 +136,39 @@ public class Repository {
         }
     }
     public void find(String message){
-
+        List<String> shas = plainFilenamesIn(Commits);
+        Commit commit;
+        for(String sha: shas){
+            commit = readObject(join(Commits, sha), Commit.class);
+            if(commit.getMessage().equals(message))
+                System.out.println(sha);
+        }
     }
     public void status(){
-
+        String head = readContentsAsString(join(Branches, "head.txt"));
+        List<String> branches = plainFilenamesIn(Branches);
+        branches.remove("head.txt");
+        List<String> stagedAddition = plainFilenamesIn(StagedAddition);
+        List<String> stagedRemoval = plainFilenamesIn(StagedRemoval);
+        System.out.println("=== Branches ===");
+        for(String branchName: branches){
+            if(branchName.equals(head)){
+                System.out.println("*"+branchName);
+            }else
+                System.out.println(branchName);
+        }
+        System.out.println("\n=== Staged Files ===");
+        for(String stagedFile: stagedAddition){
+            System.out.println(stagedFile);
+        }
+        System.out.println("\n=== Removed Files ===");
+        for(String removedFile: stagedRemoval){
+            System.out.println(removedFile);
+        }
+        System.out.println("\n=== Modifications Not Staged For Commit ===");
+        // Todo Finish Modifications check
+        System.out.println("\n=== Untracked Files");
+        //Todo Finish Untracked files check
     }
     public void checkout(String fileName){
 

@@ -14,7 +14,7 @@ public class Commit implements Serializable{
     private String message;
     private String parent;
     private String time;
-    private Repository r;
+    // array of Sha1 of Blob objects
     public ArrayList<String> trackedBlobs;
     public Commit(){
         time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
@@ -24,30 +24,35 @@ public class Commit implements Serializable{
     }
 
     public Commit(String message, Repository r) throws IOException {
-        this.r = r;
         time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         this.message = message;
+        // Sets the parent Sha to be the Sha of the most recent commit in the head branch
         parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head.txt"))));
         // adds all tracked blobs from parent commit to current commits tracked blobs
-        trackedBlobs = new ArrayList<>(readObject(join(r.Commits, parent), Commit.class).trackedBlobs);
+        trackedBlobs = new ArrayList<>(r.latestCommit().trackedBlobs);
         // Determines if we need to add and remove with this commit
         if(!(plainFilenamesIn(r.StagedAddition).size() == 0)){
             List<String> list = plainFilenamesIn(r.StagedAddition);
             Blob blob;
             File path;
+            // adds blobs to tracked blobs
             for(String fileName: list){
-                blob = new Blob(fileName, readContentsAsString(new File(fileName)));
+                blob = new Blob(fileName, readContentsAsString(join(r.StagedAddition, fileName)));
                 path = join(r.Blobs, sha1(blob));
                 path.createNewFile();
-                if(!trackedBlobs.contains(fileName))
+                // Checks if our commit is already tracking this blob
+                if(!trackedBlobs.contains(sha1(blob)))
                     trackedBlobs.add(fileName);
             }
         }
+        // Removes Blob from tracked blobs
         if(!(plainFilenamesIn(r.StagedRemoval).size() == 0)){
             List<String> list = plainFilenamesIn(r.StagedRemoval);
+            Blob blob;
             for(String fileName: list){
-                if(trackedBlobs.contains(fileName))
-                    trackedBlobs.remove(fileName);
+                blob = new Blob(fileName, readContentsAsString(join(r.StagedRemoval, fileName)));
+                if(trackedBlobs.contains(sha1(blob)))
+                    trackedBlobs.remove(sha1(blob));
             }
         }
     }

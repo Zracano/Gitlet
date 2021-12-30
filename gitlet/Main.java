@@ -26,7 +26,6 @@ public class Main {
                 repository.init();
                 break;
             case "add":
-                //Todo check for identical files
                 repository.add(args[1]);
                 break;
             case "commit":
@@ -44,10 +43,11 @@ public class Main {
                 repository.globalLog();
                 break;
             case "find":
-
+                repository.find(Arrays.stream(args).toList().remove(0).toString());
                 break;
             case "status":
-
+                //Todo Finish two checks
+                repository.status();
                 break;
             case "checkout":
 
