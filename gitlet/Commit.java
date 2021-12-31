@@ -13,7 +13,9 @@ import static gitlet.Utils.*;
 public class Commit implements Serializable{
     private String message;
     private String parent;
+    private String parent2;
     private String time;
+    private Repository r;
     // array of Sha1 of Blob objects
     public ArrayList<String> trackedBlobs;
     public Commit(){
@@ -24,6 +26,8 @@ public class Commit implements Serializable{
     }
 
     public Commit(String message, Repository r) throws IOException {
+        this.r = r;
+        this.parent2 = null;
         time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         this.message = message;
         // Sets the parent Sha to be the Sha of the most recent commit in the head branch
@@ -56,6 +60,32 @@ public class Commit implements Serializable{
             }
         }
     }
+    public Commit(String message, Repository r,String parent2) throws IOException {
+        this(message, r);
+        this.parent2 = parent2;
+    }
+    public Blob blobTrackingFile(String fileName){
+        // makes list of blobs in commit
+        List<Blob> blobs = new ArrayList<>();
+        trackedBlobs.forEach(blobSha -> blobs.add(readObject(join(r.Blobs, blobSha), Blob.class)));
+        // Checks our list of Blobs to see if they correspond to the file
+        for(Blob blob: blobs){
+            if(blob.getFileName().equals(fileName)){
+                return blob;
+            }
+        }
+        return null;
+    }
+    public List<Blob> blobList(){
+        List<Blob> blobs = new ArrayList<>();
+        trackedBlobs.forEach(sha -> blobs.add(readObject(join(r.Blobs, sha), Blob.class)));
+        return blobs;
+    }
+    public List<String> trackedFiles(){
+        List<String> trackedFiles = new ArrayList<>();
+        blobList().forEach(blob -> trackedFiles.add(blob.getFileName()));
+        return trackedFiles;
+    }
 
     public String hash(){
         return Utils.sha1(Utils.serialize(this));
@@ -69,6 +99,9 @@ public class Commit implements Serializable{
     }
     public String getParent() {
         return parent;
+    }
+    public String getParent2() {
+        return parent2;
     }
 }
 // make a hashset that uses the commit sha-1 as key and value

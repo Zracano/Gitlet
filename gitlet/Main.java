@@ -29,28 +29,30 @@ public class Main {
                 repository.add(args[1]);
                 break;
             case "commit":
-                repository.commit(Arrays.stream(args).toList().remove(0).toString());
+                repository.commit(args[1]);
                 break;
             case "rm":
                 repository.rm(args[1]);
                 break;
             case "log":
-                //Todo fix merge commits
                 repository.log();
                 break;
             case "global-log":
-                //Todo fix merge commits
                 repository.globalLog();
                 break;
             case "find":
-                repository.find(Arrays.stream(args).toList().remove(0).toString());
+                repository.find(args[1]);
                 break;
             case "status":
-                //Todo Finish two checks
                 repository.status();
                 break;
             case "checkout":
-
+                if(args[1].equals("--"))
+                    repository.checkout(args[2]);
+                else if(args[2].equals("--"))
+                    repository.checkout(args[1], args[3]);
+                else
+                    repository.checkout(args[1], false);
                 break;
             case "branch":
                 repository.branch(args[1]);
@@ -59,10 +61,10 @@ public class Main {
                 repository.rmBranch(args[1]);
                 break;
             case "reset":
-
+                repository.reset(args[1]);
                 break;
             case "merge":
-
+                repository.merge(args[1]);
                 break;
             default:
                 if(firstArg !=null)
