@@ -1,27 +1,23 @@
 package gitlet;
 
-import javax.swing.text.DateFormatter;
-import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.util.Arrays;
 
-import static gitlet.Utils.*;
 
-/** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+/**
+ * Driver class for Gitlet, a subset of the Git version-control system.
+ *
+ * @author Edgar Navarro
  */
 public class Main {
 
-    /** Usage: java gitlet.Main ARGS, where ARGS contains
-     *  <COMMAND> <OPERAND1> <OPERAND2> ... 
+    /**
+     * Usage: java gitlet.Main ARGS, where ARGS contains
+     * <COMMAND> <OPERAND1> <OPERAND2> ...
      */
     public static void main(String[] args) throws IOException {
         Repository repository = new Repository();
         String firstArg = args[0];
-        switch(firstArg) {
+        switch (firstArg) {
             case "init":
                 repository.init();
                 break;
@@ -47,9 +43,9 @@ public class Main {
                 repository.status();
                 break;
             case "checkout":
-                if(args[1].equals("--"))
+                if (args[1].equals("--"))
                     repository.checkout(args[2]);
-                else if(args[2].equals("--"))
+                else if (args[2].equals("--"))
                     repository.checkout(args[1], args[3]);
                 else
                     repository.checkout(args[1], false);
@@ -67,7 +63,7 @@ public class Main {
                 repository.merge(args[1]);
                 break;
             default:
-                if(firstArg !=null)
+                if (firstArg != null)
                     System.out.println("Not a command");
                 else
                     System.out.println("Enter a command");

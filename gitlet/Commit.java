@@ -22,7 +22,7 @@ public class Commit implements Serializable{
         time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         message = "Initial Commit";
         parent = null;
-        trackedBlobs = null;
+        trackedBlobs = new ArrayList<>();
     }
 
     public Commit(String message, Repository r) throws IOException {
@@ -33,7 +33,10 @@ public class Commit implements Serializable{
         // Sets the parent Sha to be the Sha of the most recent commit in the head branch
         parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head.txt"))));
         // adds all tracked blobs from parent commit to current commits tracked blobs
-        trackedBlobs = new ArrayList<>(r.latestCommit().trackedBlobs);
+        if(!r.latestCommit().trackedBlobs.isEmpty()) {
+            trackedBlobs = new ArrayList<>(r.latestCommit().trackedBlobs);
+        }else
+            trackedBlobs = new ArrayList<>();
         // Determines if we need to add and remove with this commit
         if(!(plainFilenamesIn(r.StagedAddition).size() == 0)){
             List<String> list = plainFilenamesIn(r.StagedAddition);
@@ -42,11 +45,11 @@ public class Commit implements Serializable{
             // adds blobs to tracked blobs
             for(String fileName: list){
                 blob = new Blob(fileName, readContentsAsString(join(r.StagedAddition, fileName)));
-                path = join(r.Blobs, sha1(blob));
+                path = join(r.Blobs, sha1(Utils.serialize(blob)));
                 path.createNewFile();
                 // Checks if our commit is already tracking this blob
-                if(!trackedBlobs.contains(sha1(blob)))
-                    trackedBlobs.add(fileName);
+                if(trackedBlobs.isEmpty() || (!trackedBlobs.isEmpty() && !trackedBlobs.contains(sha1(Utils.serialize(blob)))))
+                    trackedBlobs.add(sha1(Utils.serialize(blob)));
             }
         }
         // Removes Blob from tracked blobs
@@ -55,8 +58,8 @@ public class Commit implements Serializable{
             Blob blob;
             for(String fileName: list){
                 blob = new Blob(fileName, readContentsAsString(join(r.StagedRemoval, fileName)));
-                if(trackedBlobs.contains(sha1(blob)))
-                    trackedBlobs.remove(sha1(blob));
+                if(trackedBlobs.contains(sha1(Utils.serialize(blob))))
+                    trackedBlobs.remove(sha1(Utils.serialize(blob)));
             }
         }
     }
@@ -66,8 +69,7 @@ public class Commit implements Serializable{
     }
     public Blob blobTrackingFile(String fileName){
         // makes list of blobs in commit
-        List<Blob> blobs = new ArrayList<>();
-        trackedBlobs.forEach(blobSha -> blobs.add(readObject(join(r.Blobs, blobSha), Blob.class)));
+        ArrayList<Blob> blobs = new ArrayList<>(blobList());
         // Checks our list of Blobs to see if they correspond to the file
         for(Blob blob: blobs){
             if(blob.getFileName().equals(fileName)){
@@ -77,8 +79,13 @@ public class Commit implements Serializable{
         return null;
     }
     public List<Blob> blobList(){
+        // makes list of blobs in commit
         List<Blob> blobs = new ArrayList<>();
-        trackedBlobs.forEach(sha -> blobs.add(readObject(join(r.Blobs, sha), Blob.class)));
+        if(!trackedBlobs.isEmpty()) {
+            for(String blobSha: trackedBlobs){
+                blobs.add(readObject(join(r.Blobs, blobSha), Blob.class));
+            }
+        }
         return blobs;
     }
     public List<String> trackedFiles(){

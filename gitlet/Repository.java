@@ -2,13 +2,14 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import static gitlet.Utils.*;
 
-public class Repository {
+public class Repository implements Serializable {
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
@@ -41,11 +42,11 @@ public class Repository {
             // Makes Branch 'Master'
             File Master = join(Branches, "master.txt");
             Master.createNewFile();
-            writeObject(Master, initialCommit.hash());
+            writeContents(Master, initialCommit.hash());
             // Make Head pointer
             File Head = join(Branches, "head.txt");
             Head.createNewFile();
-            writeObject(Head, "master");
+            writeContents(Head, "master.txt");
         }
     }
     public void add(String fileName) throws IOException {
@@ -57,7 +58,7 @@ public class Repository {
             Commit currentCommit = latestCommit();
             // determines if
             // Unstages file if it is identical to current tracked blob
-            if(currentCommit.trackedBlobs.contains(sha1(blob))){
+            if(!currentCommit.trackedBlobs.isEmpty() && currentCommit.trackedBlobs.contains(sha1(Utils.serialize(blob)))){
                 restrictedDelete(join(StagedAddition, fileName));
                 restrictedDelete(join(StagedRemoval, fileName));
             }else {
@@ -66,7 +67,10 @@ public class Repository {
                 // writes the clone of the file to the Staged for addition directory
                 File path = join(StagedAddition, fileName);
                 path.createNewFile();
-                writeObject(path, copy);
+                writeContents(path, readContentsAsString(copy));
+                // Adds blob to be in Blob directory
+                writeObject(join(Blobs, sha1(Utils.serialize(blob))), blob);
+
             }
         }else
             System.out.println("File does not exist.");
@@ -80,8 +84,11 @@ public class Repository {
         }else{
             // Creates the commit
             Commit commit = new Commit(message, this);
+            File commitFile = join(Commits, commit.hash());
+            commitFile.createNewFile();
+            writeObject(commitFile, commit);
             // Makes the Current Commit be our most recent commit SHA-1
-            writeObject(new File(readContentsAsString(join(Branches,"head.txt"))),commit.hash());
+            writeContents(join(Branches, readContentsAsString(join(Branches,"head.txt"))),commit.hash());
             // Clears the Staging Area
             clearStagingArea();
         }
@@ -89,8 +96,11 @@ public class Repository {
     public void commit(String message, String parent2) throws IOException {
         // Creates the commit
         Commit commit = new Commit(message, this, parent2);
+        File commitFile = join(Commits, commit.hash());
+        commitFile.createNewFile();
+        writeObject(commitFile, commit);
         // Makes the Current Commit be our most recent commit SHA-1
-        writeObject(new File(readContentsAsString(join(Branches,"head.txt"))),commit.hash());
+        writeContents(new File(readContentsAsString(join(Branches,"head.txt"))),commit.hash());
         // Clears the Staging Area
         clearStagingArea();
     }
@@ -115,8 +125,8 @@ public class Repository {
     }
     public void log(){
         // Gets the sha of our head
-        String sha = readContentsAsString(join(Branches,"head.txt"));
-        Commit current;
+        Commit current = latestCommit();
+        String sha = current.hash();
         // iterates through all commits in commit directory from head to initial by using parent Sha within each Commit
         do {
             current = readObject(join(Commits, sha), Commit.class);
@@ -161,7 +171,7 @@ public class Repository {
     public void status(){
         String head = readContentsAsString(join(Branches, "head.txt"));
         List<String> branches = plainFilenamesIn(Branches);
-        branches.remove("head.txt");
+        //branches.remove("head.txt");
         List<String> stagedAddition = plainFilenamesIn(StagedAddition);
         List<String> stagedRemoval = plainFilenamesIn(StagedRemoval);
         //Makes list of files modified and not staged
@@ -194,17 +204,17 @@ public class Repository {
         for(String modifiedFiles: unstagedModifications){
             System.out.println(modifiedFiles);
         }
-        System.out.println("\n=== Untracked Files");
+        /*System.out.println("\n=== Untracked Files");
         for(String untrackedFiles : untrackedFileList()){
             System.out.println(untrackedFiles);
-        }
+        }*/
     }
     public void checkout(String fileName){
         // makes path of file to be replaced
         File path = join(CWD, fileName);
         Blob blob = latestCommit().blobTrackingFile(fileName);
         if(blob != null){
-            writeObject(join(CWD, fileName), blob.getContents());
+            writeContents(join(CWD, fileName), blob.getContents());
         }else
             System.out.println("File does not exist in that commit.");
     }
@@ -213,7 +223,7 @@ public class Repository {
         if(commit != null){
             Blob blob = commit.blobTrackingFile(fileName);
             if(blob.getFileName().equals(fileName)){
-                writeObject(join(CWD, fileName), blob.getContents());
+                writeContents(join(CWD, fileName), blob.getContents());
             }else
                 System.out.println("File does not exist in that commit.");
         }else
@@ -232,12 +242,12 @@ public class Repository {
                 List<Blob> blobs = new ArrayList<>(commit.blobList());
                 // replaces tracked files in CWD
                 for(Blob blob: blobs){
-                    writeObject(join(CWD,blob.getFileName()), blob.getContents());
+                    writeContents(join(CWD,blob.getFileName()), blob.getContents());
                 }
                 // Clear Staging area
                 clearStagingArea();
                 // makes given branch the head
-                writeObject(join(Branches, "head.txt"),branchName);
+                writeContents(join(Branches, "head.txt"),branchName);
             }
         }
             System.out.println("No such branch exists.");
@@ -246,7 +256,7 @@ public class Repository {
         if(!isInside(branchName,Branches)){
             File branch = join(Branches, branchName);
             branch.createNewFile();
-            writeObject(branch, readContentsAsString(join(Branches,"head.txt")));
+            writeContents(branch, readContentsAsString(join(Branches,"head.txt")));
         }else
             System.out.println("A branch with that name already exists");
 
@@ -271,7 +281,7 @@ public class Repository {
                     checkout(commitId, blob.getFileName());
                 }
                 // moves current branch head to that commit
-                writeObject(join(Branches, readContentsAsString(join(Branches, "head.txt"))), commit.hash());
+                writeContents(join(Branches, readContentsAsString(join(Branches, "head.txt"))), commit.hash());
                 // clears staging area
                 clearStagingArea();
             }else
@@ -457,10 +467,10 @@ public class Repository {
     // Helper method for clearing staging area
     public void clearStagingArea(){
         for(String file: plainFilenamesIn(StagedAddition)){
-            restrictedDelete(join(StagedAddition, file));
+            Delete(join(StagedAddition, file));
         }
         for(String file: plainFilenamesIn(StagedRemoval)){
-            restrictedDelete(join(StagedRemoval, file));
+            Delete(join(StagedRemoval, file));
         }
     }
 }

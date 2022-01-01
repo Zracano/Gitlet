@@ -79,6 +79,13 @@ class Utils {
             return false;
         }
     }
+    static boolean Delete(File file){
+        if (!file.isDirectory()) {
+            return file.delete();
+        } else {
+            return false;
+        }
+    }
 
     /** Deletes the file named FILE if it exists and is not a directory.
      *  Returns true if FILE was deleted, and false otherwise.  Refuses
@@ -230,11 +237,11 @@ class Utils {
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             ObjectOutputStream objectStream = new ObjectOutputStream(stream);
-            objectStream.writeObject(obj);
+            objectStream.writeObject(obj);//getting error
             objectStream.close();
             return stream.toByteArray();
         } catch (IOException excp) {
-            throw error("Internal error serializing commit.");
+            throw error("Internal error serializing commit." + "    " + excp);
         }
     }
 
