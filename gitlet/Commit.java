@@ -3,9 +3,11 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static gitlet.Utils.*;
@@ -19,8 +21,10 @@ public class Commit implements Serializable{
     // array of Sha1 of Blob objects
     public ArrayList<String> trackedBlobs;
     public Commit(){
-        time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
-        message = "Initial Commit";
+        SimpleDateFormat lol = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z");
+        time = lol.format(0);
+        //time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
+        message = "initial commit";
         parent = null;
         trackedBlobs = new ArrayList<>();
     }
@@ -28,7 +32,10 @@ public class Commit implements Serializable{
     public Commit(String message, Repository r) throws IOException {
         this.r = r;
         this.parent2 = null;
-        time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
+        SimpleDateFormat lol = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z");
+        Date currentMoment = new Date();
+        time = lol.format(currentMoment);
+        //time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         this.message = message;
         // Sets the parent Sha to be the Sha of the most recent commit in the head branch
         parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head.txt"))));
@@ -47,9 +54,16 @@ public class Commit implements Serializable{
                 blob = new Blob(fileName, readContentsAsString(join(r.StagedAddition, fileName)));
                 path = join(r.Blobs, sha1(Utils.serialize(blob)));
                 path.createNewFile();
-                // Checks if our commit is already tracking this blob
-                if(trackedBlobs.isEmpty() || (!trackedBlobs.isEmpty() && !trackedBlobs.contains(sha1(Utils.serialize(blob)))))
+                // Check if we are tracking the same file
+                if(!trackedBlobs.isEmpty() && trackedFiles().contains(fileName)) {
+                    removeTracking(fileName);
                     trackedBlobs.add(sha1(Utils.serialize(blob)));
+                }else{
+                    trackedBlobs.add(sha1(Utils.serialize(blob)));
+                }
+                /*// Checks if our commit is already tracking this blob
+                if(trackedBlobs.isEmpty() || (!trackedBlobs.isEmpty() && !trackedBlobs.contains(sha1(Utils.serialize(blob)))))
+                    trackedBlobs.add(sha1(Utils.serialize(blob)));*/
             }
         }
         // Removes Blob from tracked blobs
@@ -93,7 +107,14 @@ public class Commit implements Serializable{
         blobList().forEach(blob -> trackedFiles.add(blob.getFileName()));
         return trackedFiles;
     }
+    public void removeTracking(String fileName){
+        List<Blob> blobs = blobList();
+        for (int i = 0; i < blobs.size(); i++) {
+            if(blobs.get(i).getFileName().equals(fileName))
+                trackedBlobs.remove(i);
+        }
 
+    }
     public String hash(){
         return Utils.sha1(Utils.serialize(this));
     }
