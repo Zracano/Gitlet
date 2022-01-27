@@ -38,7 +38,7 @@ public class Commit implements Serializable{
         //time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MM/dd/yyyy 'at' hh:mm a"));
         this.message = message;
         // Sets the parent Sha to be the Sha of the most recent commit in the head branch
-        parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head.txt"))));
+        parent = readContentsAsString(join(r.Branches, readContentsAsString(join(r.Branches,"head"))));
         // adds all tracked blobs from parent commit to current commits tracked blobs
         if(!r.latestCommit().trackedBlobs.isEmpty()) {
             trackedBlobs = new ArrayList<>(r.latestCommit().trackedBlobs);
@@ -114,6 +114,13 @@ public class Commit implements Serializable{
                 trackedBlobs.remove(i);
         }
 
+    }
+    public boolean containing(String fileName){
+        for(Blob blob: blobList()){
+            if(blob.getFileName().equals(fileName))
+                return true;
+        }
+        return false;
     }
     public String hash(){
         return Utils.sha1(Utils.serialize(this));

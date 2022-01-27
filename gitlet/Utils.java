@@ -197,7 +197,7 @@ class Utils {
     static boolean isInside(String fileName, File dir){
         List list = plainFilenamesIn(dir);
         for (int i = 0; i < list.size(); i++) {
-            if(list.get(i) == fileName){
+            if(list.get(i).equals(fileName)){
                 return true;
             }
         }
